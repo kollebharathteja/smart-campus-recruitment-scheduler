@@ -1,0 +1,14 @@
+package com.smartcampus.model.enums;
+
+public enum NotificationType {
+    NEW_DRIVE,
+    ELIGIBILITY_RESULT,
+    APPLICATION_CONFIRMATION,
+    SHORTLISTED,
+    INTERVIEW_SCHEDULED,
+    INTERVIEW_RESCHEDULED,
+    INTERVIEW_CANCELLED,
+    NEXT_ROUND,
+    SELECTED,
+    REJECTED
+}

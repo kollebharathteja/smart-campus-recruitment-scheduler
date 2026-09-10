@@ -1,0 +1,25 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: smart-campus-recruitment
+  data:
+    mongodb:
+      uri: mongodb+srv://king:kollebharathteja@weathercluster.fbpth27.mongodb.net/smart_campus_recruitment?appName=WeatherCluster
+  security:
+    filter:
+      order: 10
+
+app:
+  jwt:
+    secret: "ChangeThisSecretKeyForSmartCampusRecruitmentSchedulerMCAProject2026"
+    expiration-ms: 86400000   # 24 hours
+
+  cors:
+    allowed-origins: "http://localhost:3000"
+
+logging:
+  level:
+    com.smartcampus: INFO
+    org.springframework.security: WARN
