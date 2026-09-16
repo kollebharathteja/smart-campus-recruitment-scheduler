@@ -6,18 +6,18 @@ spring:
     name: smart-campus-recruitment
   data:
     mongodb:
-      uri: mongodb://bharathteja9192_db_user:Kollebharath9192@ac-ch2d9fr-shard-00-00.glotopv.mongodb.net:27017,ac-ch2d9fr-shard-00-01.glotopv.mongodb.net:27017,ac-ch2d9fr-shard-00-02.glotopv.mongodb.net:27017/smart_campus_recruitment?ssl=true&replicaSet=atlas-a5c8wy-shard-0&authSource=admin&appName=smart-campus
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://bharathteja9192_db_user:Kollebharath9192@ac-ch2d9fr-shard-00-00.glotopv.mongodb.net:27017,ac-ch2d9fr-shard-00-01.glotopv.mongodb.net:27017,ac-ch2d9fr-shard-00-02.glotopv.mongodb.net:27017/smart_campus_recruitment?ssl=true&replicaSet=atlas-a5c8wy-shard-0&authSource=admin&appName=smart-campus}
   security:
     filter:
       order: 10
 
 app:
   jwt:
-    secret: "ChangeThisSecretKeyForSmartCampusRecruitmentSchedulerMCAProject2026"
+    secret: ${JWT_SECRET:ChangeThisSecretKeyForSmartCampusRecruitmentSchedulerMCAProject2026}
     expiration-ms: 86400000
 
   cors:
-    allowed-origins: "http://localhost:3000"
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
 
 logging:
   level:
