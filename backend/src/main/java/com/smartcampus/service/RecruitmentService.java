@@ -1,10 +1,10 @@
 package com.smartcampus.service;
 
 import com.smartcampus.exception.ResourceNotFoundException;
+import com.smartcampus.model.Interview;
 import com.smartcampus.model.InterviewRound;
 import com.smartcampus.model.RecruitmentDrive;
-import com.smartcampus.repository.InterviewRoundRepository;
-import com.smartcampus.repository.RecruitmentDriveRepository;
+import com.smartcampus.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +17,10 @@ public class RecruitmentService {
 
     private final RecruitmentDriveRepository driveRepository;
     private final InterviewRoundRepository roundRepository;
+    private final InterviewPanelRepository panelRepository;
+    private final ApplicationRepository applicationRepository;
+    private final InterviewRepository interviewRepository;
+    private final FeedbackRepository feedbackRepository;
 
     public List<RecruitmentDrive> getAll() {
         return driveRepository.findAll();
@@ -44,7 +48,20 @@ public class RecruitmentService {
     }
 
     public void delete(String id) {
-        driveRepository.deleteById(id);
+        deleteDriveCascade(id);
+    }
+
+    /** Deletes a drive and everything hanging off it: rounds, panels, applications, interviews, feedback. */
+    public void deleteDriveCascade(String driveId) {
+        List<Interview> interviews = interviewRepository.findByDriveId(driveId);
+        for (Interview interview : interviews) {
+            feedbackRepository.deleteAll(feedbackRepository.findByInterviewId(interview.getId()));
+        }
+        interviewRepository.deleteAll(interviews);
+        applicationRepository.deleteAll(applicationRepository.findByDriveId(driveId));
+        panelRepository.deleteAll(panelRepository.findByDriveId(driveId));
+        roundRepository.deleteAll(roundRepository.findByDriveIdOrderBySequenceAsc(driveId));
+        driveRepository.deleteById(driveId);
     }
 
     // ---- Dynamic interview round management (per drive) ----

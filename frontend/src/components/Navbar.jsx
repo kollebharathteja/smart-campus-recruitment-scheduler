@@ -16,7 +16,7 @@ export default function Navbar() {
       <div className="navbar-role">{user?.role} PORTAL</div>
       <div className="navbar-user">
         <span>{user?.name}</span>
-        <Link className="btn btn-outline btn-sm" to="/change-password">Change Password</Link>
+        <Link className="btn btn-outline btn-sm" to="/change-password">Account Settings</Link>
         <button className="btn btn-outline btn-sm" onClick={handleLogout}>Log out</button>
       </div>
     </div>

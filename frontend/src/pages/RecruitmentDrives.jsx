@@ -105,6 +105,17 @@ export default function RecruitmentDrives() {
     }
   };
 
+  const removeDrive = async (drive) => {
+    if (!confirm(`Delete "${drive.jobRole}"? This also deletes its rounds, panels, applications, interviews, and feedback. This cannot be undone.`)) return;
+    try {
+      await driveApi.delete(drive.id);
+      push('Drive deleted.', 'success');
+      load();
+    } catch (err) {
+      errorFromException(err, 'Could not delete drive.');
+    }
+  };
+
   return (
     <div>
       <div className="section-title">
@@ -133,6 +144,7 @@ export default function RecruitmentDrives() {
               </p>
               <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                 {user.role === 'ADMIN' && <Link className="btn btn-outline btn-sm" to={`/drives/${d.id}`}>Manage</Link>}
+                {user.role === 'ADMIN' && <button className="btn btn-danger btn-sm" onClick={() => removeDrive(d)}>Delete</button>}
                 {user.role === 'STUDENT' && !application && (
                   <button className="btn btn-primary btn-sm" onClick={() => apply(d.id)}>Check Eligibility &amp; Apply</button>
                 )}
@@ -237,4 +249,3 @@ export default function RecruitmentDrives() {
     </div>
   );
 }
-//

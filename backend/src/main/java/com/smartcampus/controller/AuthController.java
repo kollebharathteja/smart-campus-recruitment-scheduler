@@ -33,4 +33,10 @@ public class AuthController {
         authService.changePassword(currentUserProvider.getCurrentUserId(), request);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/update-email")
+    public ResponseEntity<Void> updateEmail(@Valid @RequestBody com.smartcampus.dto.UpdateEmailRequest request) {
+        authService.updateEmail(currentUserProvider.getCurrentUserId(), request);
+        return ResponseEntity.ok().build();
+    }
 }

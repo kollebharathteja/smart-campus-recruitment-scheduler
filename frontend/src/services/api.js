@@ -84,9 +84,12 @@ export const adminUserApi = {
   resetPassword: (userId, newPassword) => api.post(`/admin/users/${userId}/reset-password`, { newPassword })
 };
 
-// ---- Self-service: change my own password ----
+// ---- Self-service: change my own password / email ----
 export const changePassword = (currentPassword, newPassword) =>
   api.post('/auth/change-password', { currentPassword, newPassword });
+
+export const updateEmail = (newEmail, currentPassword) =>
+  api.post('/auth/update-email', { newEmail, currentPassword });
 
 // ---- Academic Settings (departments & degrees master lists) ----
 export const academicSettingsApi = {

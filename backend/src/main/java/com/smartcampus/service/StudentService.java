@@ -55,11 +55,14 @@ public class StudentService {
         studentRepository.deleteById(id);
     }
 
-    /** Students may only touch their own contact info — never the eligibility-relevant fields. */
+    /** Students may only touch their own contact info and self-reported academic history here. */
     public Student updateOwnProfile(String userId, com.smartcampus.dto.StudentProfileUpdateRequest req) {
         Student existing = getByUserId(userId);
         existing.setPhone(req.getPhone());
         existing.setResumeUrl(req.getResumeUrl());
+        if (req.getAdditionalDetails() != null) {
+            existing.setAdditionalDetails(req.getAdditionalDetails());
+        }
         existing.setUpdatedAt(LocalDateTime.now());
         return studentRepository.save(existing);
     }

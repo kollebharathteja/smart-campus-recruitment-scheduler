@@ -2,7 +2,9 @@ package com.smartcampus.service;
 
 import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.model.Company;
+import com.smartcampus.model.RecruitmentDrive;
 import com.smartcampus.repository.CompanyRepository;
+import com.smartcampus.repository.RecruitmentDriveRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +16,8 @@ import java.util.List;
 public class CompanyService {
 
     private final CompanyRepository companyRepository;
+    private final RecruitmentDriveRepository driveRepository;
+    private final RecruitmentService recruitmentService;
 
     public List<Company> getAll() {
         return companyRepository.findAll();
@@ -40,7 +44,12 @@ public class CompanyService {
         return companyRepository.save(existing);
     }
 
+    /** Deleting a company deletes every recruitment drive it ran, and everything hanging off those drives. */
     public void delete(String id) {
+        List<RecruitmentDrive> drives = driveRepository.findByCompanyId(id);
+        for (RecruitmentDrive drive : drives) {
+            recruitmentService.deleteDriveCascade(drive.getId());
+        }
         companyRepository.deleteById(id);
     }
 }

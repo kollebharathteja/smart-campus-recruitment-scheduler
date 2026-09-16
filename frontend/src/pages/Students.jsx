@@ -7,7 +7,7 @@ const emptyForm = { name: '', email: '', rollNumber: '', department: '', degree:
 
 // Column headers expected in the Excel template. Keep this in sync with the
 // template generator below and with parseExcelRow().
-const EXCEL_COLUMNS = ['Name', 'Email', 'Roll Number', 'Department', 'Degree', 'CGPA', 'Backlogs', 'Graduation Year', 'Skills (comma separated)'];
+const EXCEL_COLUMNS = ['Name', 'Email', 'Roll Number', 'Department', 'Degree', 'CGPA', 'Backlogs', 'Graduation Year', 'Skills (comma separated)', '10th Percentage', '12th Percentage', 'UG CGPA', 'PG CGPA'];
 
 // Headers that map to a fixed Student field — everything else in the sheet
 // becomes a flexible additionalDetails entry (10th %, UG CGPA, PG CGPA, etc.)
@@ -19,7 +19,7 @@ const KNOWN_HEADER_KEYS = new Set([
 
 function downloadTemplate() {
   const sample = [
-    ['Rahul Sharma', 'rahul.sharma@example.edu', 'MCA2027010', 'Computer Applications', 'MCA', 8.2, 0, 2027, 'Java, Spring Boot, MongoDB']
+    ['Rahul Sharma', 'rahul.sharma@example.edu', 'MCA2027010', 'Computer Applications', 'MCA', 8.2, 0, 2027, 'Java, Spring Boot, MongoDB', 78, 82, 8.2, '']
   ];
   const ws = XLSX.utils.aoa_to_sheet([EXCEL_COLUMNS, ...sample]);
   ws['!cols'] = EXCEL_COLUMNS.map(() => ({ wch: 22 }));

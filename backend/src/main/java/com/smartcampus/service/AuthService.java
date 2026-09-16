@@ -120,4 +120,30 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
+
+    public void updateEmail(String userId, com.smartcampus.dto.UpdateEmailRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new com.smartcampus.exception.ResourceNotFoundException("Account not found."));
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BadCredentialsException("Current password is incorrect.");
+        }
+        if (!user.getEmail().equalsIgnoreCase(request.getNewEmail()) && userRepository.existsByEmail(request.getNewEmail())) {
+            throw new IllegalArgumentException("That email is already in use by another account.");
+        }
+        user.setEmail(request.getNewEmail());
+        userRepository.save(user);
+
+        // Keep the linked profile's email copy in sync so lookups/notifications stay correct.
+        if (user.getRole() == Role.STUDENT) {
+            studentRepository.findByUserId(userId).ifPresent(s -> {
+                s.setEmail(request.getNewEmail());
+                studentRepository.save(s);
+            });
+        } else if (user.getRole() == Role.INTERVIEWER) {
+            interviewerRepository.findByUserId(userId).ifPresent(i -> {
+                i.setEmail(request.getNewEmail());
+                interviewerRepository.save(i);
+            });
+        }
+    }
 }

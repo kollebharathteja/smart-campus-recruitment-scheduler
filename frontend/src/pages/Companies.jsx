@@ -58,7 +58,7 @@ export default function Companies() {
   };
 
   const remove = async (id) => {
-    if (!confirm('Delete this company?')) return;
+    if (!confirm('Delete this company? This also deletes every recruitment drive it ran, along with their rounds, panels, applications, interviews, and feedback. This cannot be undone.')) return;
     try {
       await companyApi.delete(id);
       push('Company deleted.', 'success');

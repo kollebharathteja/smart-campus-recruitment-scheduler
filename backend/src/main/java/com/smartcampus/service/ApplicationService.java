@@ -7,7 +7,9 @@ import com.smartcampus.model.*;
 import com.smartcampus.model.enums.ApplicationStatus;
 import com.smartcampus.model.enums.NotificationType;
 import com.smartcampus.repository.ApplicationRepository;
+import com.smartcampus.repository.CompanyRepository;
 import com.smartcampus.repository.InterviewRoundRepository;
+import com.smartcampus.repository.RecruitmentDriveRepository;
 import com.smartcampus.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,8 @@ public class ApplicationService {
     private final ApplicationRepository applicationRepository;
     private final StudentRepository studentRepository;
     private final InterviewRoundRepository roundRepository;
+    private final RecruitmentDriveRepository driveRepository;
+    private final CompanyRepository companyRepository;
     private final EligibilityService eligibilityService;
     private final NotificationService notificationService;
 
@@ -88,9 +92,20 @@ public class ApplicationService {
 
         Student student = studentRepository.findById(application.getStudentId()).orElse(null);
         if (student != null) {
+            RecruitmentDrive drive = driveRepository.findById(application.getDriveId()).orElse(null);
+            String companyName = drive != null
+                    ? companyRepository.findById(drive.getCompanyId()).map(Company::getName).orElse("the company")
+                    : "the company";
+            String jobRole = drive != null ? drive.getJobRole() : "";
+            InterviewRound firstRound = firstRoundId == null ? null : roundRepository.findById(firstRoundId).orElse(null);
+            String roundLabel = firstRound != null
+                    ? String.format("Round %d: %s", firstRound.getSequence(), firstRound.getRoundName())
+                    : "the first round";
+
             notificationService.notify(student.getUserId(), NotificationType.SHORTLISTED,
                     "You've been shortlisted!",
-                    "You have been shortlisted for the recruitment drive. Please submit your interview availability.");
+                    String.format("You've been shortlisted by %s for %s — %s. Please submit your interview availability.",
+                            companyName, jobRole, roundLabel));
         }
 
         return saved;
