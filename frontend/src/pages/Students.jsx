@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { studentApi, academicSettingsApi, adminUserApi } from '../services/api';
 import { useToast } from '../context/ToastContext.jsx';
+import { ACADEMIC_DETAIL_FIELDS } from '../constants/academicFields.js';
 
 const emptyForm = { name: '', email: '', rollNumber: '', department: '', degree: '', cgpa: '', backlogs: 0, graduationYear: 2027, skills: '', detailRows: [] };
 
@@ -203,6 +204,15 @@ export default function Students() {
     return { ...f, detailRows: rows };
   });
   const removeDetailRow = (i) => setForm((f) => ({ ...f, detailRows: f.detailRows.filter((_, idx) => idx !== i) }));
+
+  // Quick-add a row for one of the common academic fields (10th %, 12th %, UG CGPA, PG CGPA)
+  // using its exact canonical label, so it lines up with what a drive's eligibility criteria
+  // (and the Excel import template) expect. If the field is already present, just focuses it
+  // instead of adding a duplicate row.
+  const addPresetDetail = (label) => setForm((f) => {
+    if (f.detailRows.some((row) => row.key.trim().toLowerCase() === label.toLowerCase())) return f;
+    return { ...f, detailRows: [...f.detailRows, { key: label, value: '' }] };
+  });
 
   const submit = async (e) => {
     e.preventDefault();
@@ -419,7 +429,24 @@ export default function Students() {
 
               <div className="form-group">
                 <label>Additional details (optional — 10th %, 12th %, UG CGPA, PG CGPA, etc.)</label>
-                <p className="muted" style={{ marginBottom: 8 }}>Add any extra numeric detail a company might ask for. The label you type here is what drives will match against.</p>
+                <p className="muted" style={{ marginBottom: 8 }}>
+                  Only fill in the levels a company might actually ask for — if a drive doesn't
+                  require, say, PG CGPA, the student never needs it. Use the quick buttons below
+                  so the label matches exactly what drives check against, or add your own custom detail.
+                </p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                  {ACADEMIC_DETAIL_FIELDS.map((f) => (
+                    <button
+                      type="button"
+                      key={f.label}
+                      className="btn btn-outline btn-sm"
+                      title={f.hint}
+                      onClick={() => addPresetDetail(f.label)}
+                    >
+                      + {f.label}
+                    </button>
+                  ))}
+                </div>
                 {form.detailRows.map((row, i) => (
                   <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <input placeholder="e.g. 10th Percentage" value={row.key} onChange={(e) => updateDetailRow(i, 'key', e.target.value)} style={{ flex: 2 }} />

@@ -11,6 +11,20 @@ spring:
     filter:
       order: 10
 
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+        transport:
+          protocol: smtp
+
 app:
   jwt:
     secret: ${JWT_SECRET:ChangeThisSecretKeyForSmartCampusRecruitmentSchedulerMCAProject2026}
@@ -18,6 +32,15 @@ app:
 
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
+  mail:
+    # Emails are only actually sent when MAIL_USERNAME/MAIL_PASSWORD are set (e.g. a Gmail app password).
+    # Without them, the app logs what *would* have been sent so nothing breaks in dev.
+    enabled: ${MAIL_ENABLED:false}
+    from: "${MAIL_FROM:Smart Campus Recruitment <no-reply@smartcampus.local>}"
+
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
 
 logging:
   level:

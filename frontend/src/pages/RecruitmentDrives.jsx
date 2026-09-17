@@ -4,6 +4,7 @@ import { driveApi, companyApi, applicationApi, studentApi, academicSettingsApi }
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
+import { ACADEMIC_DETAIL_FIELDS } from '../constants/academicFields.js';
 
 const emptyForm = {
   companyId: '', jobRole: '', description: '', applicationDeadline: '', driveDate: '',
@@ -59,6 +60,15 @@ export default function RecruitmentDrives() {
     return { ...f, customCriteria: rows };
   });
   const removeCriterion = (i) => setForm((f) => ({ ...f, customCriteria: f.customCriteria.filter((_, idx) => idx !== i) }));
+
+  // Quick-add a criterion for one of the common academic fields (10th %, 12th %, UG CGPA,
+  // PG CGPA) with its exact canonical label — matches Students.jsx's quick-add and the Excel
+  // import template, so there's no risk of a typo silently making the criterion never match.
+  // Leaving a field out here (not clicking it) means this drive simply doesn't require it.
+  const addPresetCriterion = (label) => setForm((f) => {
+    if (f.customCriteria.some((c) => c.fieldName.trim().toLowerCase() === label.toLowerCase())) return f;
+    return { ...f, customCriteria: [...f.customCriteria, { fieldName: label, minimumValue: '' }] };
+  });
 
   const submit = async (e) => {
     e.preventDefault();
@@ -225,8 +235,21 @@ export default function RecruitmentDrives() {
               <div className="form-group">
                 <label>Additional eligibility criteria (optional)</label>
                 <p className="muted" style={{ marginBottom: 8 }}>
-                  For things like 10th %, 12th %, UG CGPA, PG CGPA — matched against each student's "Additional details" (set on the Students page). Label must match exactly.
+                  For things like 10th %, 12th %, UG CGPA, PG CGPA — matched against each student's "Additional details" (set on the Students page). Label must match exactly. Only add the levels this company actually asks for; anything you don't add here isn't required.
                 </p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                  {ACADEMIC_DETAIL_FIELDS.map((f) => (
+                    <button
+                      type="button"
+                      key={f.label}
+                      className="btn btn-outline btn-sm"
+                      title={f.hint}
+                      onClick={() => addPresetCriterion(f.label)}
+                    >
+                      + Require {f.label}
+                    </button>
+                  ))}
+                </div>
                 {form.customCriteria.map((c, i) => (
                   <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <input placeholder="e.g. 10th Percentage" value={c.fieldName} onChange={(e) => updateCriterion(i, 'fieldName', e.target.value)} style={{ flex: 2 }} />

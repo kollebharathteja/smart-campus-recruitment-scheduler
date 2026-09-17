@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import DashboardCard from '../components/DashboardCard.jsx';
+import StatusBadge from '../components/StatusBadge.jsx';
 import { studentApi, applicationApi, interviewApi } from '../services/api';
 import { useToast } from '../context/ToastContext.jsx';
+import { ACADEMIC_DETAIL_FIELDS } from '../constants/academicFields.js';
 
 export default function StudentDashboard() {
   const [stats, setStats] = useState(null);
@@ -10,6 +12,7 @@ export default function StudentDashboard() {
   const [resumeUrl, setResumeUrl] = useState('');
   const [detailRows, setDetailRows] = useState([]);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [applications, setApplications] = useState([]);
   const { push, errorFromException } = useToast();
 
   const loadProfile = async () => {
@@ -29,14 +32,23 @@ export default function StudentDashboard() {
   });
   const removeDetailRow = (i) => setDetailRows((rows) => rows.filter((_, idx) => idx !== i));
 
+  // Quick-add one of the common academic fields (10th %, 12th %, UG CGPA, PG CGPA) with its
+  // exact canonical label, so it matches what a drive's eligibility criteria checks against.
+  const addPresetDetail = (label) => setDetailRows((rows) => {
+    if (rows.some((row) => row.key.trim().toLowerCase() === label.toLowerCase())) return rows;
+    return [...rows, { key: label, value: '' }];
+  });
+
   useEffect(() => {
     (async () => {
       const student = await loadProfile();
-      const { data: applications } = await applicationApi.getByStudent(student.id);
+      const { data: apps } = await applicationApi.getByStudent(student.id);
       const { data: interviews } = await interviewApi.getByStudent(student.id);
+      const { data: summary } = await applicationApi.mySummary();
+      setApplications(summary);
       setStats({
-        applied: applications.length,
-        shortlisted: applications.filter((a) => a.status === 'SHORTLISTED' || a.status === 'IN_PROCESS').length,
+        applied: apps.length,
+        shortlisted: apps.filter((a) => a.status === 'SHORTLISTED' || a.status === 'IN_PROCESS').length,
         upcoming: interviews.filter((i) => i.status === 'SCHEDULED' || i.status === 'CONFIRMED').length,
         completed: interviews.filter((i) => i.status === 'COMPLETED').length,
         status: student.placementStatus
@@ -113,6 +125,19 @@ export default function StudentDashboard() {
             </div>
             <div className="form-group">
               <label>Academic history (optional)</label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                {ACADEMIC_DETAIL_FIELDS.map((f) => (
+                  <button
+                    type="button"
+                    key={f.label}
+                    className="btn btn-outline btn-sm"
+                    title={f.hint}
+                    onClick={() => addPresetDetail(f.label)}
+                  >
+                    + {f.label}
+                  </button>
+                ))}
+              </div>
               {detailRows.map((row, i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                   <input placeholder="e.g. 10th Percentage" value={row.key} onChange={(e) => updateDetailRow(i, 'key', e.target.value)} style={{ flex: 2 }} />
@@ -125,6 +150,51 @@ export default function StudentDashboard() {
             <button className="btn btn-primary" disabled={savingProfile} style={{ marginTop: 10 }}>{savingProfile ? 'Saving…' : 'Save'}</button>
           </form>
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h3 style={{ marginBottom: 4 }}>My Applications</h3>
+        <p className="muted" style={{ marginBottom: 14 }}>
+          Every company you've been shortlisted or applied for, with your current round and marks once interviews are graded.
+        </p>
+        {applications.length === 0 && <p className="empty-state">You haven't applied to or been shortlisted for any drive yet.</p>}
+        {applications.map((app) => (
+          <div key={app.applicationId} className="card" style={{ marginBottom: 14, background: 'rgba(255,255,255,0.02)' }}>
+            <div className="section-title" style={{ marginBottom: 8 }}>
+              <h4 style={{ margin: 0 }}>{app.companyName} — {app.jobRole}</h4>
+              <StatusBadge status={app.status} />
+            </div>
+            {app.currentRoundName && (
+              <p className="muted" style={{ marginBottom: 8 }}>
+                Current round: Round {app.currentRoundSequence} — {app.currentRoundName}
+              </p>
+            )}
+            {app.status === 'NOT_ELIGIBLE' && app.eligibilityReasons?.length > 0 && (
+              <ul style={{ margin: '0 0 8px', paddingLeft: 16 }}>
+                {app.eligibilityReasons.map((r, i) => <li key={i} style={{ fontSize: 13 }}>{r}</li>)}
+              </ul>
+            )}
+            {app.roundResults?.some((r) => r.interviewStatus || r.overallScore != null) && (
+              <table>
+                <thead>
+                  <tr><th>Round</th><th>Panel</th><th>Status</th><th>Date</th><th>Score</th><th>Decision</th></tr>
+                </thead>
+                <tbody>
+                  {app.roundResults.map((r) => (
+                    <tr key={r.roundId}>
+                      <td>Round {r.sequence}: {r.roundName}</td>
+                      <td>{r.panelName || '—'}</td>
+                      <td>{r.interviewStatus ? <StatusBadge status={r.interviewStatus} /> : '—'}</td>
+                      <td>{r.interviewDate || '—'}</td>
+                      <td>{r.overallScore != null ? r.overallScore : '—'}</td>
+                      <td>{r.decision || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

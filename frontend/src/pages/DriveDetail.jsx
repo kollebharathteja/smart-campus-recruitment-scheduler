@@ -43,7 +43,7 @@ export default function DriveDetail() {
   const shortlist = async (applicationId) => {
     try {
       await applicationApi.shortlist(applicationId);
-      push('Candidate shortlisted.', 'success');
+      push('Candidate shortlisted — login created if needed and an email was sent.', 'success');
       load();
     } catch (err) { errorFromException(err); }
   };
@@ -51,8 +51,9 @@ export default function DriveDetail() {
   const shortlistAll = async () => {
     try {
       await applicationApi.shortlistAll(id);
-      push('All eligible candidates shortlisted.', 'success');
+      push('All eligible candidates shortlisted — logins created where needed and emails sent.', 'success');
       load();
+      loadEligibility();
     } catch (err) { errorFromException(err); }
   };
 
@@ -106,6 +107,14 @@ export default function DriveDetail() {
               <tr><td>Eligible departments</td><td>{(drive.requirements?.eligibleDepartments || []).join(', ') || 'Any'}</td></tr>
               <tr><td>Graduation year</td><td>{drive.requirements?.graduationYear || 'Any'}</td></tr>
               <tr><td>Required skills</td><td>{(drive.requirements?.requiredSkills || []).join(', ') || '—'}</td></tr>
+              <tr>
+                <td>Additional criteria (10th %, 12th %, UG/PG CGPA, etc.)</td>
+                <td>
+                  {(drive.requirements?.customCriteria || []).length === 0
+                    ? '—'
+                    : drive.requirements.customCriteria.map((c) => `${c.fieldName} ≥ ${c.minimumValue}`).join(', ')}
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>

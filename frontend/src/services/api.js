@@ -78,7 +78,10 @@ export const applicationApi = {
   updateStatus: (id, status) => api.put(`/applications/${id}/status`, { status }),
   shortlist: (id) => api.post(`/applications/${id}/shortlist`),
   shortlistAll: (driveId) => api.post(`/applications/shortlist-all/${driveId}`),
-  reject: (id) => api.post(`/applications/${id}/reject`)
+  reject: (id) => api.post(`/applications/${id}/reject`),
+  // Enriched view of the logged-in student's own applications: company, role, current round,
+  // status, and marks/feedback for every round completed so far — powers the student dashboard.
+  mySummary: () => api.get('/applications/me/summary')
 };
 
 // ---- Admin: Reset any user's password ----

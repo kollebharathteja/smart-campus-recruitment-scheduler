@@ -1,8 +1,11 @@
 package com.smartcampus.controller;
 
+import com.smartcampus.dto.ApplicationSummaryDto;
 import com.smartcampus.model.Application;
 import com.smartcampus.model.enums.ApplicationStatus;
+import com.smartcampus.security.CurrentUserProvider;
 import com.smartcampus.service.ApplicationService;
+import com.smartcampus.service.StudentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,10 +19,23 @@ import java.util.Map;
 public class ApplicationController {
 
     private final ApplicationService applicationService;
+    private final StudentService studentService;
+    private final CurrentUserProvider currentUserProvider;
 
     @PostMapping
     public ResponseEntity<Application> apply(@RequestBody Map<String, String> body) {
         return ResponseEntity.ok(applicationService.apply(body.get("studentId"), body.get("driveId")));
+    }
+
+    /**
+     * Enriched, per-drive view of the logged-in student's own applications — company, role,
+     * current round, status, and marks/feedback for every round completed so far. Powers the
+     * "My Applications" section of the student dashboard.
+     */
+    @GetMapping("/me/summary")
+    public ResponseEntity<List<ApplicationSummaryDto>> mySummary() {
+        String studentId = studentService.getByUserId(currentUserProvider.getCurrentUserId()).getId();
+        return ResponseEntity.ok(applicationService.getSummaryForStudent(studentId));
     }
 
     @GetMapping
