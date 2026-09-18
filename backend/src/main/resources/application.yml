@@ -12,10 +12,10 @@ spring:
       order: 10
 
   mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    host: smtp.gmail.com
+    port: 587
+    username: bharathteja9192@gmail.com
+    password: mcnnxwgaxaombiig
     properties:
       mail:
         smtp:
@@ -34,10 +34,8 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
 
   mail:
-    # Emails are only actually sent when MAIL_USERNAME/MAIL_PASSWORD are set (e.g. a Gmail app password).
-    # Without them, the app logs what *would* have been sent so nothing breaks in dev.
-    enabled: ${MAIL_ENABLED:false}
-    from: "${MAIL_FROM:Smart Campus Recruitment <no-reply@smartcampus.local>}"
+    enabled: true
+    from: "Smart Campus Recruitment <bharathteja9192@gmail.com>"
 
   frontend:
     base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
