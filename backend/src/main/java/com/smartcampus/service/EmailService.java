@@ -1,34 +1,52 @@
 package com.smartcampus.service;
 
-import lombok.RequiredArgsConstructor;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
- * Thin wrapper around JavaMailSender.
+ * Sends email via Brevo's HTTPS REST API instead of raw SMTP.
+ * Render's free tier blocks outbound SMTP (ports 587/465/25), so JavaMailSender never
+ * worked in production even with correct Gmail credentials. Brevo's API runs over plain
+ * HTTPS (port 443), which Render allows, so this is the fix — not a workaround.
  *
- * app.mail.enabled must be true (and MAIL_USERNAME/MAIL_PASSWORD configured) for real emails
- * to go out. When disabled (the default in dev, since no SMTP creds are configured), every
- * "send" is just logged so the rest of the shortlist/login-provisioning flow keeps working
- * without a mail server. This means the app never breaks or slows down when mail isn't set up.
+ * app.mail.enabled + app.mail.brevo-api-key must both be set for real emails to go out.
+ * Otherwise every "send" is just logged, so nothing breaks when unconfigured.
  */
 @Service
-@RequiredArgsConstructor
 public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
+    private static final URI BREVO_ENDPOINT = URI.create("https://api.brevo.com/v3/smtp/email");
 
-    private final JavaMailSender mailSender;
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${app.mail.enabled:false}")
     private boolean mailEnabled;
 
-    @Value("${app.mail.from}")
-    private String fromAddress;
+    @Value("${app.mail.brevo-api-key:}")
+    private String brevoApiKey;
+
+    @Value("${app.mail.from-email}")
+    private String fromEmail;
+
+    @Value("${app.mail.from-name:Smart Campus Recruitment}")
+    private String fromName;
 
     public void send(String to, String subject, String body) {
         if (to == null || to.isBlank()) {
@@ -36,21 +54,41 @@ public class EmailService {
             return;
         }
 
-        if (!mailEnabled) {
+        if (!mailEnabled || brevoApiKey == null || brevoApiKey.isBlank()) {
             log.info("[MAIL DISABLED] Would send to {} | subject: {}\n{}", to, subject, body);
             return;
         }
 
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromAddress);
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(body);
-            mailSender.send(message);
-            log.info("Email sent to {} | subject: {}", to, subject);
+            Map<String, Object> payload = new LinkedHashMap<>();
+            Map<String, String> sender = new LinkedHashMap<>();
+            sender.put("name", fromName);
+            sender.put("email", fromEmail);
+            payload.put("sender", sender);
+            payload.put("to", List.of(Map.of("email", to)));
+            payload.put("subject", subject);
+            payload.put("textContent", body);
+
+            String json = objectMapper.writeValueAsString(payload);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(BREVO_ENDPOINT)
+                    .timeout(Duration.ofSeconds(15))
+                    .header("accept", "application/json")
+                    .header("content-type", "application/json")
+                    .header("api-key", brevoApiKey)
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                log.info("Email sent to {} | subject: {} | Brevo response: {}", to, subject, response.body());
+            } else {
+                log.error("Brevo rejected email to {} (subject: {}): HTTP {} — {}",
+                        to, subject, response.statusCode(), response.body());
+            }
         } catch (Exception ex) {
-            // Never let a mail-server hiccup break shortlisting/login-provisioning.
             log.error("Failed to send email to {} (subject: {}): {}", to, subject, ex.getMessage());
         }
     }

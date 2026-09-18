@@ -11,20 +11,6 @@ spring:
     filter:
       order: 10
 
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: bharathteja9192@gmail.com
-    password: mcnnxwgaxaombiig
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-        transport:
-          protocol: smtp
-
 app:
   jwt:
     secret: ${JWT_SECRET:ChangeThisSecretKeyForSmartCampusRecruitmentSchedulerMCAProject2026}
@@ -35,7 +21,9 @@ app:
 
   mail:
     enabled: true
-    from: "Smart Campus Recruitment <bharathteja9192@gmail.com>"
+    brevo-api-key: "PASTE_YOUR_XKEYSIB_KEY_HERE"
+    from-email: bharathteja9192@gmail.com
+    from-name: "Smart Campus Recruitment"
 
   frontend:
     base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
