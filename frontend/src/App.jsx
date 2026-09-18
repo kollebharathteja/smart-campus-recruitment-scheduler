@@ -23,6 +23,7 @@ import Reports from './pages/Reports.jsx';
 import PendingApprovals from './pages/PendingApprovals.jsx';
 import AcademicSettingsPage from './pages/AcademicSettingsPage.jsx';
 import ChangePassword from './pages/ChangePassword.jsx';
+import DepartmentResults from './pages/DepartmentResults.jsx';
 
 function RoleDashboard() {
   const { user } = useAuth();
@@ -67,6 +68,10 @@ export default function App() {
 
       <Route path="/availability" element={
         <ProtectedRoute roles={['STUDENT', 'INTERVIEWER']}><Layout><Availability /></Layout></ProtectedRoute>
+      } />
+
+      <Route path="/department-results" element={
+        <ProtectedRoute roles={['ADMIN', 'INTERVIEWER']}><Layout><DepartmentResults /></Layout></ProtectedRoute>
       } />
 
       <Route path="/scheduler" element={

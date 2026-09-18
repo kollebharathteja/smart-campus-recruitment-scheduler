@@ -38,11 +38,23 @@ public class NotificationService {
      */
     public Notification notifyAndEmail(String recipientUserId, NotificationType type, String title,
                                         String inAppMessage, String emailSubject, String emailBody) {
+        return notifyAndEmail(recipientUserId, null, type, title, inAppMessage, emailSubject, emailBody);
+    }
+
+    /**
+     * Overload for recipients who may not have a login account yet (e.g. a student the T&amp;P
+     * office only ever bulk-imported): the email still goes out to fallbackEmail, and the
+     * in-app notification is simply skipped.
+     */
+    public Notification notifyAndEmail(String recipientUserId, String fallbackEmail, NotificationType type,
+                                        String title, String inAppMessage, String emailSubject, String emailBody) {
         Notification notification = notify(recipientUserId, type, title, inAppMessage);
-        if (recipientUserId != null) {
-            userRepository.findById(recipientUserId)
-                    .ifPresent(user -> emailService.send(user.getEmail(), emailSubject, emailBody));
+        String address = recipientUserId == null ? null : userRepository.findById(recipientUserId)
+                .map(user -> user.getEmail()).orElse(null);
+        if (address == null || address.isBlank()) {
+            address = fallbackEmail;
         }
+        emailService.send(address, emailSubject, emailBody);
         return notification;
     }
 

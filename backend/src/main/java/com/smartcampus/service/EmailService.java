@@ -48,14 +48,20 @@ public class EmailService {
     @Value("${app.mail.from-name:Smart Campus Recruitment}")
     private String fromName;
 
+    /** A blank or leftover placeholder value counts as "not configured". */
+    private boolean hasUsableKey() {
+        return brevoApiKey != null && !brevoApiKey.isBlank() && brevoApiKey.startsWith("xkeysib-");
+    }
+
     public void send(String to, String subject, String body) {
         if (to == null || to.isBlank()) {
             log.warn("Skipping email '{}' — recipient has no email address on file.", subject);
             return;
         }
 
-        if (!mailEnabled || brevoApiKey == null || brevoApiKey.isBlank()) {
-            log.info("[MAIL DISABLED] Would send to {} | subject: {}\n{}", to, subject, body);
+        if (!mailEnabled || !hasUsableKey()) {
+            log.warn("[MAIL DISABLED] Would send to {} | subject: {} — set BREVO_API_KEY (an xkeysib-… key) "
+                    + "and MAIL_ENABLED=true for real delivery.\n{}", to, subject, body);
             return;
         }
 

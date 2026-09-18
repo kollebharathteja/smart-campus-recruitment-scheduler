@@ -11,6 +11,7 @@ const NAV = {
     { to: '/panels', label: 'Interview Panels' },
     { to: '/scheduler', label: 'Scheduler' },
     { to: '/calendar', label: 'Interview Calendar' },
+    { to: '/department-results', label: 'Round Results' },
     { to: '/reports', label: 'Reports' },
     { to: '/pending-approvals', label: 'Pending Approvals' },
     { to: '/academic-settings', label: 'Academic Settings' }
@@ -25,6 +26,7 @@ const NAV = {
   INTERVIEWER: [
     { to: '/', label: 'Dashboard' },
     { to: '/panels', label: 'My Panels' },
+    { to: '/department-results', label: 'Department Results' },
     { to: '/availability', label: 'My Availability' },
     { to: '/calendar', label: 'Interview Calendar' },
     { to: '/feedback', label: 'Interview Feedback' }

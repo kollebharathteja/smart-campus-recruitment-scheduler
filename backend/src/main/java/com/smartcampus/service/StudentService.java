@@ -126,11 +126,14 @@ public class StudentService {
         return new LoginProvisionResult(user, true, rawPassword);
     }
 
-    /** Students may only touch their own contact info and self-reported academic history here. */
+    /** Students may only touch their own contact info, skills and self-reported academic history here. */
     public Student updateOwnProfile(String userId, com.smartcampus.dto.StudentProfileUpdateRequest req) {
         Student existing = getByUserId(userId);
         existing.setPhone(req.getPhone());
         existing.setResumeUrl(req.getResumeUrl());
+        if (req.getSkills() != null) {
+            existing.setSkills(req.getSkills());
+        }
         if (req.getAdditionalDetails() != null) {
             existing.setAdditionalDetails(req.getAdditionalDetails());
         }

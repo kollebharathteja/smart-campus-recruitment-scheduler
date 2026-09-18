@@ -45,9 +45,6 @@ export default function Login() {
         <p className="muted" style={{ marginTop: 18 }}>
           New student? <Link className="link-amber" to="/register">Create an account</Link>
         </p>
-        <p className="muted" style={{ marginTop: 10, fontSize: 12.5 }}>
-          Demo logins — Admin: admin@campus.edu / admin123 · Student: rahul.sharma@campus.edu / student123 · Interviewer: ananya.rao@campus.edu / interviewer123
-        </p>
       </div>
     </div>
   );

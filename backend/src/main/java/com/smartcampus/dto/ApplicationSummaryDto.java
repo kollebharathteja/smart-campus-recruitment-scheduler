@@ -48,5 +48,9 @@ public class ApplicationSummaryDto {
         private Double overallScore;
         private String decision; // SELECT / REJECT / HOLD, from Feedback, if graded
         private String comments;
+        private Double marks; // uploaded by admin/lecturer for this round
+        private Double maxMarks;
+        private Double cutoffMarks;
+        private Boolean qualified;
     }
 }

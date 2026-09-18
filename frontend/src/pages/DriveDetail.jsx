@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { driveApi, applicationApi, studentApi } from '../services/api';
+import { driveApi, applicationApi, studentApi, roundResultApi } from '../services/api';
 import { useToast } from '../context/ToastContext.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
+import RoundMarksPanel from '../components/RoundMarksPanel.jsx';
+import DriveResultsTable from '../components/DriveResultsTable.jsx';
 
-const TABS = ['Requirements', 'Eligibility', 'Applications', 'Rounds'];
+const TABS = ['Requirements', 'Eligibility', 'Applications', 'Rounds', 'Round Marks', 'Results'];
 
 export default function DriveDetail() {
   const { id } = useParams();
@@ -16,6 +18,8 @@ export default function DriveDetail() {
   const [students, setStudents] = useState({});
   const [rounds, setRounds] = useState([]);
   const [roundForm, setRoundForm] = useState({ roundName: '', sequence: 1, durationMinutes: 30 });
+  const [activeRoundId, setActiveRoundId] = useState('');
+  const [results, setResults] = useState([]);
   const { push, errorFromException } = useToast();
 
   const load = async () => {
@@ -29,6 +33,12 @@ export default function DriveDetail() {
     setRounds(r);
     const { data: apps } = await applicationApi.getByDrive(id);
     setApplications(apps);
+    setActiveRoundId((current) => (r.some((x) => x.id === current) ? current : r[0]?.id || ''));
+  };
+
+  const loadResults = async () => {
+    const { data } = await roundResultApi.driveResults(id);
+    setResults(data);
   };
 
   const loadEligibility = async () => {
@@ -38,7 +48,7 @@ export default function DriveDetail() {
     setIneligible(ie);
   };
 
-  useEffect(() => { load(); loadEligibility(); }, [id]);
+  useEffect(() => { load(); loadEligibility(); loadResults(); }, [id]);
 
   const shortlist = async (applicationId) => {
     try {
@@ -82,6 +92,8 @@ export default function DriveDetail() {
       load();
     } catch (err) { errorFromException(err); }
   };
+
+  const activeRound = rounds.find((r) => r.id === activeRoundId) || null;
 
   if (!drive) return <p className="muted">Loading…</p>;
 
@@ -196,6 +208,27 @@ export default function DriveDetail() {
             <div className="form-group"><label>Duration (minutes)</label><input type="number" value={roundForm.durationMinutes} onChange={(e) => setRoundForm({ ...roundForm, durationMinutes: parseInt(e.target.value) })} required /></div>
             <div className="form-group"><button className="btn btn-primary">Add Round</button></div>
           </form>
+        </div>
+      )}
+
+      {tab === 'Round Marks' && (
+        <div className="card">
+          <div className="section-title">
+            <h3>Upload Round Marks</h3>
+            <select value={activeRoundId} onChange={(e) => setActiveRoundId(e.target.value)} style={{ maxWidth: 260 }}>
+              {rounds.map((r) => <option key={r.id} value={r.id}>{r.sequence}. {r.roundName}</option>)}
+            </select>
+          </div>
+          {activeRound
+            ? <RoundMarksPanel round={activeRound} onSaved={() => { load(); loadResults(); }} />
+            : <p className="empty-state">Add at least one round before uploading marks.</p>}
+        </div>
+      )}
+
+      {tab === 'Results' && (
+        <div className="card">
+          <h3>Round-wise Results &amp; Selections</h3>
+          <DriveResultsTable results={results} />
         </div>
       )}
     </div>

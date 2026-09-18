@@ -105,6 +105,15 @@ export const academicSettingsApi = {
   removeDegree: (name) => api.delete(`/admin/academic-settings/degrees/${encodeURIComponent(name)}`)
 };
 
+// ---- Round marks & results (admin + lecturer; lecturers see only their own department) ----
+export const roundResultApi = {
+  candidates: (roundId) => api.get(`/rounds/${roundId}/candidates`),
+  uploadMarks: (roundId, data) => api.post(`/rounds/${roundId}/marks`, data),
+  results: (roundId) => api.get(`/rounds/${roundId}/results`),
+  driveResults: (driveId) => api.get(`/rounds/drives/${driveId}/results`),
+  allResults: () => api.get('/rounds/results')
+};
+
 // ---- Admin: Lecturer Approvals ----
 export const lecturerApprovalApi = {
   getPending: () => api.get('/admin/lecturer-approvals'),

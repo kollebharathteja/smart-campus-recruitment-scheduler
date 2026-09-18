@@ -60,6 +60,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/applications/**").authenticated()
                         .requestMatchers("/api/panels/**").authenticated()
                         .requestMatchers("/api/availability/**").authenticated()
+                        .requestMatchers("/api/rounds/**").hasAnyRole("ADMIN", "INTERVIEWER")
                         .requestMatchers("/api/scheduler/**").hasRole("ADMIN")
                         .requestMatchers("/api/interviews/**").authenticated()
                         .requestMatchers("/api/reports/**").hasRole("ADMIN")
