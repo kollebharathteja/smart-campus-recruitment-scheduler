@@ -20,10 +20,10 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
 
   mail:
-    enabled: true
-    brevo-api-key: "PASTE_YOUR_XKEYSIB_KEY_HERE"
-    from-email: bharathteja9192@gmail.com
-    from-name: "Smart Campus Recruitment"
+    enabled: ${MAIL_ENABLED:true}
+    brevo-api-key: ${BREVO_API_KEY:}
+    from-email: ${MAIL_FROM_EMAIL:bharathteja9192@gmail.com}
+    from-name: ${MAIL_FROM_NAME:Smart Campus Recruitment}
 
   frontend:
     base-url: ${FRONTEND_BASE_URL:http://localhost:3000}

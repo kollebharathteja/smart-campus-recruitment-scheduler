@@ -30,4 +30,9 @@ public class InterviewRound {
     private Integer sequence; // order of the round within the drive
 
     private Integer durationMinutes; // default interview slot duration for this round
+
+    /** Marks needed to clear this round; set/updated when a marks sheet is uploaded. */
+    private Double cutoffMarks;
+
+    private Double maxMarks;
 }

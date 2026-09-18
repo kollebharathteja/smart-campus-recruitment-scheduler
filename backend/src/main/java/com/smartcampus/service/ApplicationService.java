@@ -42,6 +42,8 @@ public class ApplicationService {
     private final EligibilityService eligibilityService;
     private final NotificationService notificationService;
     private final StudentService studentService;
+    private final RoundResultRepository roundResultRepository;
+    private final ScheduleFormatter scheduleFormatter;
 
     public Application apply(String studentId, String driveId) {
         if (applicationRepository.existsByStudentIdAndDriveId(studentId, driveId)) {
@@ -142,15 +144,7 @@ public class ApplicationService {
                 : "the company";
         String jobRole = drive != null ? drive.getJobRole() : "";
         InterviewRound firstRound = firstRoundId == null ? null : roundRepository.findById(firstRoundId).orElse(null);
-        String roundLabel = firstRound != null
-                ? String.format("Round %d: %s", firstRound.getSequence(), firstRound.getRoundName())
-                : "the first round";
-
-        String panelName = null;
-        if (firstRound != null) {
-            panelName = panelRepository.findByRoundId(firstRound.getId()).stream()
-                    .findFirst().map(InterviewPanel::getPanelName).orElse(null);
-        }
+        String roundLabel = firstRound != null ? scheduleFormatter.roundLabel(firstRound) : "the first round";
 
         // Auto-provision a login the first time this student is shortlisted for anything.
         // If they already have one (self-registered, or shortlisted for an earlier company),
@@ -171,10 +165,8 @@ public class ApplicationService {
         body.append("Hi ").append(student.getName()).append(",\n\n");
         body.append("Congratulations! You have been shortlisted by ").append(companyName)
                 .append(" for the role of ").append(jobRole).append(".\n\n");
-        body.append("Next up: ").append(roundLabel).append("\n");
-        if (panelName != null) {
-            body.append("Interview panel: ").append(panelName).append("\n");
-        }
+        body.append("Next up: ").append(roundLabel).append("\n\n");
+        body.append(scheduleFormatter.scheduleBlock(student.getId(), drive, firstRound));
         body.append("\nPlease log in to the Smart Campus Recruitment portal to submit your interview ")
                 .append("availability and track every round's status and marks.\n");
         body.append("Login email: ").append(student.getEmail()).append("\n");
@@ -271,6 +263,9 @@ public class ApplicationService {
                         String panelName = panelRepository.findByRoundId(round.getId()).stream()
                                 .findFirst().map(InterviewPanel::getPanelName).orElse(null);
 
+                        RoundResult roundResult = roundResultRepository
+                                .findByRoundIdAndStudentId(round.getId(), studentId).orElse(null);
+
                         Double overallScore = null;
                         String decision = null;
                         String comments = null;
@@ -297,6 +292,10 @@ public class ApplicationService {
                                 .overallScore(overallScore)
                                 .decision(decision)
                                 .comments(comments)
+                                .marks(roundResult != null ? roundResult.getMarks() : null)
+                                .maxMarks(roundResult != null ? roundResult.getMaxMarks() : round.getMaxMarks())
+                                .cutoffMarks(roundResult != null ? roundResult.getCutoffMarks() : round.getCutoffMarks())
+                                .qualified(roundResult != null ? roundResult.isQualified() : null)
                                 .build();
                     })
                     .toList();

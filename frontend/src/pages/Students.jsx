@@ -8,19 +8,26 @@ const emptyForm = { name: '', email: '', rollNumber: '', department: '', degree:
 
 // Column headers expected in the Excel template. Keep this in sync with the
 // template generator below and with parseExcelRow().
-const EXCEL_COLUMNS = ['Name', 'Email', 'Roll Number', 'Department', 'Degree', 'CGPA', 'Backlogs', 'Graduation Year', 'Skills (comma separated)', '10th Percentage', '12th Percentage', 'UG CGPA', 'PG CGPA'];
+const EXCEL_COLUMNS = ['Name', 'Email', 'Roll Number', 'Department', 'Degree', 'PG/Degree CGPA', 'Backlogs', 'Graduation Year', 'Skills (comma separated)', '10th Percentage', '12th Percentage', 'UG CGPA'];
 
 // Headers that map to a fixed Student field — everything else in the sheet
-// becomes a flexible additionalDetails entry (10th %, UG CGPA, PG CGPA, etc.)
+// becomes a flexible additionalDetails entry (10th %, UG CGPA, etc.).
+// Compared after normalizeKey(), so spacing/punctuation variants collapse together.
 const KNOWN_HEADER_KEYS = new Set([
-  'name', 'email', 'roll number', 'rollnumber', 'department', 'degree',
-  'cgpa', 'backlogs', 'graduation year', 'graduationyear',
-  'skills (comma separated)', 'skills'
+  'name', 'email', 'rollnumber', 'department', 'degree',
+  'cgpa', 'pgdegreecgpa', 'backlogs', 'graduationyear',
+  'skillscommaseparated', 'skills', 'timestamp'
 ]);
+
+// Collapses a header to its bare letters/digits so 'Skills(comma separated)',
+// 'Skills (comma separated)' and 'skills' all resolve to the same field.
+function normalizeKey(key) {
+  return String(key).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
 
 function downloadTemplate() {
   const sample = [
-    ['Rahul Sharma', 'rahul.sharma@example.edu', 'MCA2027010', 'Computer Applications', 'MCA', 8.2, 0, 2027, 'Java, Spring Boot, MongoDB', 78, 82, 8.2, '']
+    ['Rahul Sharma', 'rahul.sharma@example.edu', 'MCA2027010', 'Computer Applications', 'MCA', 8.2, 0, 2027, 'Java, Spring Boot, MongoDB', 78, 82, 8.2]
   ];
   const ws = XLSX.utils.aoa_to_sheet([EXCEL_COLUMNS, ...sample]);
   ws['!cols'] = EXCEL_COLUMNS.map(() => ({ wch: 22 }));
@@ -30,43 +37,58 @@ function downloadTemplate() {
 }
 
 function parseExcelRow(row) {
-  // Accepts either the template's friendly headers or plain lowercase field names,
-  // so a sheet doesn't have to match exactly to be imported.
+  // Headers are matched on their normalized form, so any spacing/casing/punctuation
+  // variant of a column ('Roll Number', 'rollnumber', 'Skills(comma separated)') is
+  // accepted and a sheet doesn't have to match the template exactly to import.
+  const byNormalized = new Map();
+  for (const key of Object.keys(row)) {
+    const normalized = normalizeKey(key);
+    if (!byNormalized.has(normalized)) byNormalized.set(normalized, row[key]);
+  }
   const get = (...keys) => {
     for (const k of keys) {
-      if (row[k] !== undefined && row[k] !== null && row[k] !== '') return row[k];
+      const value = byNormalized.get(normalizeKey(k));
+      if (value !== undefined && value !== null && value !== '') return value;
     }
     return '';
   };
-  const skillsRaw = get('Skills (comma separated)', 'Skills', 'skills');
+
+  // Skills may be comma-, semicolon-, slash- or newline-separated in real sheets.
+  const skills = String(get('Skills (comma separated)', 'Skills') || '')
+    .split(/[,;/\n|]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   // Any column not in the known set becomes a flexible additionalDetails entry
-  // (e.g. "UG CGPA", "PG CGPA", "10th Percentage") — parsed as a number, skipped if not numeric.
+  // (e.g. "UG CGPA", "10th Percentage") — parsed as a number, skipped if not numeric.
   const additionalDetails = {};
   for (const key of Object.keys(row)) {
-    if (KNOWN_HEADER_KEYS.has(key.trim().toLowerCase())) continue;
+    if (KNOWN_HEADER_KEYS.has(normalizeKey(key))) continue;
     const num = parseFloat(row[key]);
     if (!Number.isNaN(num)) additionalDetails[key.trim()] = num;
   }
 
-  // Fall back to a recognizable "*CGPA" column (e.g. "UG CGPA") if a plain "CGPA" column is absent.
-  let cgpa = parseFloat(get('CGPA', 'cgpa'));
+  // Fall back to a recognizable "*CGPA" column (e.g. "UG CGPA") if the main column is absent.
+  let cgpa = parseFloat(get('PG/Degree CGPA', 'CGPA'));
   if (Number.isNaN(cgpa)) {
     const cgpaLikeKey = Object.keys(row).find((k) => /cgpa/i.test(k));
-    if (cgpaLikeKey) cgpa = parseFloat(row[cgpaLikeKey]) || 0;
-    else cgpa = 0;
+    cgpa = cgpaLikeKey ? parseFloat(row[cgpaLikeKey]) || 0 : 0;
   }
 
+  // Sheets often write "NO"/"None" instead of 0 for backlogs.
+  const backlogsRaw = String(get('Backlogs') || '').trim();
+  const backlogs = /^(no|none|nil|n\/a|-)$/i.test(backlogsRaw) ? 0 : parseInt(backlogsRaw) || 0;
+
   return {
-    name: String(get('Name', 'name')).trim(),
-    email: String(get('Email', 'email')).trim(),
-    rollNumber: String(get('Roll Number', 'rollNumber', 'roll number')).trim(),
-    department: String(get('Department', 'department')).trim(),
-    degree: String(get('Degree', 'degree')).trim() || 'MCA',
+    name: String(get('Name')).trim(),
+    email: String(get('Email')).trim().toLowerCase(),
+    rollNumber: String(get('Roll Number')).trim(),
+    department: String(get('Department')).trim(),
+    degree: String(get('Degree')).trim() || 'MCA',
     cgpa,
-    backlogs: parseInt(get('Backlogs', 'backlogs')) || 0,
-    graduationYear: parseInt(get('Graduation Year', 'graduationYear', 'graduation year')) || new Date().getFullYear(),
-    skills: String(skillsRaw || '').split(',').map((s) => s.trim()).filter(Boolean),
+    backlogs,
+    graduationYear: parseInt(get('Graduation Year')) || new Date().getFullYear(),
+    skills,
     additionalDetails
   };
 }
@@ -306,7 +328,7 @@ export default function Students() {
       push(`Import finished: ${created} added${failed ? `, ${failed} skipped (missing fields or duplicate)` : ''}.`, failed && !created ? 'error' : 'success');
       load();
     } catch (err) {
-      push('Could not read that file. Make sure it is a valid .xlsx file.', 'error');
+      push('Could not read that file. Make sure it is a valid .xlsx, .xls or .csv file.', 'error');
     } finally {
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -322,7 +344,7 @@ export default function Students() {
           <button className="btn btn-outline" disabled={importing} onClick={() => fileInputRef.current?.click()}>
             {importing ? 'Importing…' : 'Import from Excel'}
           </button>
-          <input ref={fileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleImportFile} />
+          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={handleImportFile} />
           <button className="btn btn-amber" onClick={openAdd}>+ Add Student</button>
         </div>
       </div>
@@ -422,7 +444,7 @@ export default function Students() {
                 <div className="form-group"><label>Graduation year</label><input type="number" value={form.graduationYear} onChange={update('graduationYear')} required /></div>
               </div>
               <div className="form-row">
-                <div className="form-group"><label>CGPA</label><input type="number" step="0.1" value={form.cgpa} onChange={update('cgpa')} required /></div>
+                <div className="form-group"><label>PG/Degree CGPA</label><input type="number" step="0.1" value={form.cgpa} onChange={update('cgpa')} required /></div>
                 <div className="form-group"><label>Backlogs</label><input type="number" value={form.backlogs} onChange={update('backlogs')} required /></div>
               </div>
               <div className="form-group"><label>Skills (comma separated)</label><input value={form.skills} onChange={update('skills')} placeholder="Java, Spring Boot, MongoDB" /></div>

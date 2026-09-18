@@ -10,6 +10,7 @@ export default function StudentDashboard() {
   const [profile, setProfile] = useState(null);
   const [phone, setPhone] = useState('');
   const [resumeUrl, setResumeUrl] = useState('');
+  const [skills, setSkills] = useState('');
   const [detailRows, setDetailRows] = useState([]);
   const [savingProfile, setSavingProfile] = useState(false);
   const [applications, setApplications] = useState([]);
@@ -20,6 +21,7 @@ export default function StudentDashboard() {
     setProfile(student);
     setPhone(student.phone || '');
     setResumeUrl(student.resumeUrl || '');
+    setSkills((student.skills || []).join(', '));
     setDetailRows(Object.entries(student.additionalDetails || {}).map(([key, value]) => ({ key, value: String(value) })));
     return student;
   };
@@ -66,7 +68,12 @@ export default function StudentDashboard() {
       }
     }
     try {
-      await studentApi.updateMyProfile({ phone, resumeUrl, additionalDetails });
+      await studentApi.updateMyProfile({
+        phone,
+        resumeUrl,
+        skills: skills.split(',').map((s) => s.trim()).filter(Boolean),
+        additionalDetails
+      });
       push('Details updated.', 'success');
       loadProfile();
     } catch (err) {
@@ -97,7 +104,7 @@ export default function StudentDashboard() {
       <div className="card-grid" style={{ gridTemplateColumns: '1fr 1fr', marginTop: 8 }}>
         <div className="card">
           <h3 style={{ marginBottom: 4 }}>My Eligibility Record</h3>
-          <p className="muted" style={{ marginBottom: 14 }}>CGPA, backlogs, department, degree, and skills are set by your T&amp;P office — you can't edit these here. Contact admin if anything looks wrong.</p>
+          <p className="muted" style={{ marginBottom: 14 }}>CGPA, backlogs, department and degree are set by your T&amp;P office — you can't edit these here. Contact admin if anything looks wrong. Your skills can be edited alongside your contact details.</p>
           <table>
             <tbody>
               <tr><td className="muted">Roll number</td><td>{profile.rollNumber}</td></tr>
@@ -122,6 +129,10 @@ export default function StudentDashboard() {
             <div className="form-group">
               <label>Resume link</label>
               <input value={resumeUrl} onChange={(e) => setResumeUrl(e.target.value)} placeholder="Link to your resume (Google Drive, etc.)" />
+            </div>
+            <div className="form-group">
+              <label>Skills (comma separated)</label>
+              <input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="Java, Spring Boot, MongoDB" />
             </div>
             <div className="form-group">
               <label>Academic history (optional)</label>
